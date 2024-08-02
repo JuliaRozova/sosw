@@ -431,12 +431,10 @@ class Processor:
             pass
 
 
-# Global lambda processor placeholder
+# Global placeholders for processor, lambda_context and boto3_session
 _processor = None
-
-# Global lambda context placeholder
 _lambda_context = None
-
+_boto3_session = None
 
 class LambdaGlobals:
     """
@@ -456,6 +454,14 @@ class LambdaGlobals:
         """
         global _lambda_context
         _lambda_context = None
+
+
+    @property
+    def boto3_session(self):
+        global _boto3_session
+        if not _boto3_session:
+            _boto3_session = boto3.Session()
+        return _boto3_session
 
 
     @property
@@ -482,7 +488,7 @@ class LambdaGlobals:
         _processor = val
 
 
-def get_lambda_handler(processor_class, global_vars=None, custom_config=None):
+def get_lambda_handler(processor_class: Processor, global_vars: LambdaGlobals = None, custom_config: Dict = None):
     """
     Return a reference to the entry point of the lambda function.
 
