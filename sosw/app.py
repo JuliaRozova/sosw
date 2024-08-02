@@ -174,6 +174,8 @@ class Processor:
                 # The other supported option is to load boto3 client if it exists.
                 try:
                     setattr(self, f"{module_name}_client", boto3.client(module_name))
+                    #TODO implement the following
+                    # setattr(self, f"{module_name}_client", global_vars.boto3_session.client(module_name))
                     continue
                 except Exception:
                     raise RuntimeError(f"Failed to import for service {module_name}. Component naming problem.")
