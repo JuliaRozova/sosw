@@ -93,7 +93,7 @@ class DynamoDbClient:
     }
 
 
-    def __init__(self, config: dict, glue_client: boto3.client = None):
+    def __init__(self, config: dict, *, ddb_client: boto3.client = None, glue_client: boto3.client = None):
         """
         If ``skip_glue`` not in config, try to enrich config from Glue Data Catalog. May provide ``glue_client``
         to save initialization time.
@@ -111,8 +111,8 @@ class DynamoDbClient:
         else:
             self.config = config
 
-        # create a dynamodb client
-        self.dynamo_client = boto3.client('dynamodb', region_name=config.get('region_name'))
+        # Register dynamodb client in class instance.
+        self.dynamo_client = ddb_client or boto3.client('dynamodb', region_name=config.get('region_name'))
 
         # storage for table description(s)
         self._table_descriptions: Optional[Dict[str, Dict]] = {}
