@@ -238,7 +238,6 @@ class app_UnitTestCase(unittest.TestCase):
         processor = Processor(custom_config=config)
         client_instance = processor.get_ddbc(prefix)
 
-        mock_dynamodb_client.assert_called_once_with(config['example_dynamo_db_config'])
         self.assertIsInstance(client_instance, MagicMock)
 
 

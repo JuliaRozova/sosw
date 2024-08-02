@@ -314,7 +314,9 @@ class Processor:
 
         name = f"{prefix}_dynamo_db_client"
         if not hasattr(self, name):
-            setattr(self, name, DynamoDbClient(self.config[f'{prefix}_dynamo_db_config']))
+            setattr(self, name, DynamoDbClient(self.config[f'{prefix}_dynamo_db_config'],
+                                               ddb_client=global_vars.boto3_client('dynamodb'),
+                                               glue_client=global_vars.boto3_client('glue')))
 
         return getattr(self, name)
 
@@ -457,6 +459,7 @@ class LambdaGlobals:
     This namespace also contains the lambda_context which should be reset by `get_lambda_handler` method.
     See Worker examples in documentation for more info.
     """
+    boto3_clients: dict = None
 
 
     def __init__(self):
@@ -468,6 +471,8 @@ class LambdaGlobals:
         global _lambda_context
         _lambda_context = None
 
+        self.boto3_clients = {}
+
 
     @property
     def boto3_session(self):
@@ -475,6 +480,13 @@ class LambdaGlobals:
         if not _boto3_session:
             _boto3_session = boto3.Session()
         return _boto3_session
+
+
+    def boto3_client(self, name: str):
+        if client := self.boto3_clients.get(name):
+            return client
+        self.boto3_clients[name] = self.boto3_session.client(name)
+        return self.boto3_clients[name]
 
 
     @property
