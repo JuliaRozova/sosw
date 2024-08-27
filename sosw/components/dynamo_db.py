@@ -727,8 +727,14 @@ class DynamoDbClient:
         return result_expr, result_values
 
 
-    def get_by_scan(self, attrs=None, table_name=None, index_name=None, strict=None, fetch_all_fields=None,
-                    consistent_read=None):
+    def get_by_scan(self, attrs=None,
+                    table_name=None,
+                    *,
+                    index_name=None,
+                    strict=None,
+                    fetch_all_fields=None,
+                    consistent_read=None,
+                    filter_expression: Optional[str] = None):
         """
         Scans a table. Don't use this method if you want to select by keys. It is SLOW compared to get_by_query.
         Careful - don't make queries of too many items, this could run for a long time.
@@ -745,6 +751,9 @@ class DynamoDbClient:
         :param bool strict: DEPRECATED.
         :param bool fetch_all_fields: If False, will only get the attributes specified in the row mapper.
             If True, will get all attributes. Default is False.
+        :param str filter_expression:  Supports regular comparisons and `between`. Input must be a regular human string
+            e.g. ``'key <= 42', 'name = marta', 'foo between 10 and 20'``, etc.
+
         :return: List of items from the table, each item in key-value format
         :rtype: list
         """
@@ -754,7 +763,7 @@ class DynamoDbClient:
                            "Please replace it's usage with ``fetch_all_fields`` (and reverse the boolean value)")
         fetch_all_fields = fetch_all_fields if fetch_all_fields is not None else False if strict is None else not strict
 
-        response_iterator = self._build_scan_iterator(attrs, table_name, index_name, consistent_read)
+        response_iterator = self._build_scan_iterator(attrs, table_name, index_name, consistent_read, filter_expression)
 
         result = []
         for page in response_iterator:
@@ -765,7 +774,7 @@ class DynamoDbClient:
 
 
     def get_by_scan_generator(self, attrs=None, table_name=None, index_name=None, strict=None, fetch_all_fields=None,
-                              consistent_read=None):
+                              consistent_read=None, filter_expression=None):
         """
         Scans a table. Don't use this method if you want to select by keys. It is SLOW compared to get_by_query.
         Careful - don't make queries of too many items, this could run for a long time.
@@ -792,17 +801,21 @@ class DynamoDbClient:
                            "Please replace it's usage with ``fetch_all_fields`` (and reverse the boolean value)")
         fetch_all_fields = fetch_all_fields if fetch_all_fields is not None else False if strict is None else not strict
 
-        response_iterator = self._build_scan_iterator(attrs, table_name, index_name, consistent_read)
+        response_iterator = self._build_scan_iterator(attrs, table_name, index_name, consistent_read, filter_expression)
         for page in response_iterator:
             self.stats['dynamo_scan_queries'] += 1
             yield [self.dynamo_to_dict(x, fetch_all_fields=fetch_all_fields) for x in page['Items']]
 
 
-    def _build_scan_iterator(self, attrs=None, table_name=None, index_name=None, consistent_read=None):
+    def _build_scan_iterator(self, attrs=None, table_name=None, index_name=None, consistent_read=None,
+                             filter_expression=None):
         table_name = self._get_validate_table_name(table_name)
 
+        if attrs and filter_expression:
+            raise ValueError('Either attrs or filter_expression are supported, not both')
+
         filter_values = None
-        cond_expr = None
+        cond_expr = ''
         if attrs:
             filter_values = self.dict_to_dynamo(attrs, add_prefix=':', strict=False)
 
@@ -812,6 +825,9 @@ class DynamoDbClient:
                 cond_expr_parts.append(f"{key_attr_name} = :{key_attr_name}")
 
             cond_expr = " AND ".join(cond_expr_parts)
+
+        elif filter_expression:
+            cond_expr, filter_values = self._parse_filter_expression(filter_expression)
 
         query_args = {
             'TableName': table_name,
