@@ -638,5 +638,19 @@ class dynamodb_client_UnitTestCase(unittest.TestCase):
         self.dynamo_client._parse_filter_expression.assert_called_once_with(filter_expression)
 
 
+    @unittest.skip
+    def test_get_by_scan_generator__calls_parse_filter_expression(self):
+        filter_expression = 'age = 42'
+
+        self.dynamo_client._parse_filter_expression = MagicMock()
+        self.dynamo_client._parse_filter_expression.return_value = ('age = :age', {':age': 42})
+
+        self.dynamo_client.get_by_scan_generator(attrs={'a': 42})
+        self.dynamo_client._parse_filter_expression.assert_not_called()
+
+        self.dynamo_client.get_by_scan_generator(filter_expression=filter_expression)
+        self.dynamo_client._parse_filter_expression.assert_called_once_with(filter_expression)
+
+
 if __name__ == '__main__':
     unittest.main()
