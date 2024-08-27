@@ -799,16 +799,12 @@ class DynamoDbClient:
         :return: List of items from the table, each item in key-value format
         :rtype: list
         """
-        logger.warning("START")
 
         if strict is not None:
             logger.warning("get_by_query ``strict`` variable is deprecated in sosw 0.7.13+. "
                            "Please replace it's usage with ``fetch_all_fields`` (and reverse the boolean value)")
         fetch_all_fields = fetch_all_fields if fetch_all_fields is not None else False if strict is None else not strict
 
-        logger.warning("GET_BY_SCAN_GENERATOR")
-        logger.warning("GET_BY_SCAN_GENERATOR")
-        logger.warning("GET_BY_SCAN_GENERATOR")
         response_iterator = self._build_scan_iterator(attrs, table_name=table_name, index_name=index_name,
                                                       consistent_read=consistent_read,
                                                       filter_expression=filter_expression)
@@ -820,10 +816,6 @@ class DynamoDbClient:
     def _build_scan_iterator(self, attrs=None, *, table_name=None, index_name=None, consistent_read=None,
                              filter_expression=None):
         table_name = self._get_validate_table_name(table_name)
-
-        print("_BUILD_SCAN_ITERATOR")
-        print("_BUILD_SCAN_ITERATOR")
-        print("_BUILD_SCAN_ITERATOR")
 
         if attrs and filter_expression:
             raise ValueError('Either attrs or filter_expression are supported, not both')
@@ -841,7 +833,6 @@ class DynamoDbClient:
             cond_expr = " AND ".join(cond_expr_parts)
 
         elif filter_expression:
-            print("FILTEEEERRRR")
             cond_expr, filter_values = self._parse_filter_expression(filter_expression)
 
         query_args = {
